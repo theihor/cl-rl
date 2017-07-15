@@ -4,8 +4,7 @@
   :author "Ihor Solodrai"
   :mailto "the.ihor@gmail.com"
   :homepage ""
-  :description "CL-RL is a library of reinforcement learning algorithms such
-  as Temporal Difference Learning."
+  :description "CL-RL is a library of reinforcement learning algorithms."
   :depends-on (;; #:cl-random
                #:alexandria #:anaphora #:mgl-mat #:cl-gena)
   :components ((:module "src"
