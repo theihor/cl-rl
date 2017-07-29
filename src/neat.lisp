@@ -35,8 +35,13 @@
           
           (pair nil)) 
 
-      (labels ((%has-path? (n1 n2)
-                 (let ((out-links (nn::node-out-links network n1)))
+      (labels ((%out-links (node)
+                 (loop :for link :in (append (disabled-links g)
+                                             (network-links network))
+                    :when (eq node (from-node link))
+                    :collect link))
+               (%has-path? (n1 n2)
+                 (let ((out-links (%out-links n1)))
                    (or (some (lambda (link) (= (nn::id (nn::to-node link))
                                           (nn::id n2)))
                              out-links)
@@ -52,7 +57,7 @@
                                                  (nn::id from-node))
                                               (= (nn::id (nn::to-node link))
                                                  (nn::id to-node))))
-                               (nn::node-out-links network from-node))
+                               (%out-links from-node))
                          (%has-path? to-node from-node))
                (setf pair (cons from-node to-node)))
              (incf i))
@@ -116,6 +121,7 @@
                                    (append (list in-link out-link)
                                            (remove link (network-links network)))) 
       ;; (format t "~A~%" (node-weights new-node))
+      (check-weird g)
       ))
   g)
 
@@ -156,7 +162,20 @@
 (defparameter *new-link-probability* 2e-2)
 (defparameter *new-node-probability* 1e-2)
 
+(defun check-weird (g)
+  (when (loop :for link :in (nn::network-links (genotype-network g)) :do
+           (when (some (lambda (l)
+                         (and (= (nn::id (nn::from-node link))
+                                 (nn::id (nn::from-node l)))
+                              (= (nn::id (nn::to-node link))
+                                 (nn::id (nn::to-node l)))))
+                       (remove link (nn::network-links (genotype-network g))))
+             (format t "links: ~A~%"
+                     (nn::network-links (genotype-network g)))
+             (error "Something weird happened!~%")))))
+
 (defmethod mutate ((g neat-genotype))
+  
   (let ((r (random 1.0)))
     (cond ((< r *new-link-probability*)
            (mutate-new-link g :w (random-weight)))
@@ -164,6 +183,7 @@
                    *new-node-probability*))
            (mutate-new-node g))
           (t (mutate-change-weight g)))
+   
     g))
 
 (defparameter *genetic-distance-c1* 1.0)
@@ -315,7 +335,7 @@
                                              nodes))
                  new-links))
         ;; (format  t "links = ~A~%~%" new-links)
-
+        (setf new-links (sort new-links #'< :key #'nn::index))
         
         (let ((res
                (if (check-recursive-links new-links)
