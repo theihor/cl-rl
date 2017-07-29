@@ -39,13 +39,17 @@
   (< (abs (- 16 (xor-fitness (best-genotype1 pop))))
      0.32))
 
-(defun solve-xor (&key population-size timeout max-iteration)
+(defun solve-xor (&key population-size timeout max-iteration log-file)
   (let ((*elitism-rate* 0.15) 
         (*tournament-rate* 0.6)
         (*initial-mutation-depth* 0.1)
-        (*initial-mutation-width* 0.6)
+        (*initial-mutation-width* 0.4)
         (*mutation-decrease-rate* :constant) 
+
         (*species* (make-hash-table :test #'eq))
+        (*innovations* (make-hash-table :test #'equal))
+        (*innovation-number* 10)
+
         (*genetic-distance-threshold* 5.0)
         (*genetic-distance-c1* 1.0)
         (*genetic-distance-c2* 1.0)
@@ -55,7 +59,7 @@
         (*min-weight* -20.0)
         (*max-weight* +20.0)
         (*interspecies-mating-rate* 0.001)
-        (*stagnation-threshold* 20)
+        (*stagnation-threshold* 25)
         (*enable-disabled-link-chance* 0.2)
         (*mutation-only-rate* 0.1)) 
     (let* ((pop (initialize-population
@@ -63,7 +67,9 @@
                  (xor-nn-genotype-generator *min-weight* *max-weight*)
                  population-size))
            (*species* (compute-species pop))
-           (the-best (xor-fitness (best-genotype1 pop))))
+           (the-best (xor-fitness (best-genotype1 pop)))
+           (time 0)
+           (iterations 0))
       (setf pop
             (evolution pop
                        :timeout timeout
@@ -76,8 +82,16 @@
                                                  (format t "~%~A [~A s]: ~,2F (~A pops)~%"
                                                          i (float elapsed-time) the-best
                                                          (length (genotype-list pop))))
-                                          (format t ".")))
+                                          (format t "."))
+                                      (setf time (float elapsed-time))
+                                      (setf iterations i))
                                     ;; (compute-species pop)
                                     )))
+      (when log-file
+        (with-open-file (f log-file
+                           :if-exists :append
+                           :if-does-not-exist :create
+                           :direction :output)
+          (format f "~A ~A ~A~%" (round the-best 2) time iterations)))
       (format t "~%BEST VALUE = ~A~%" the-best)
       (values (best-genotype1 pop) pop))))

@@ -217,7 +217,7 @@
   (let ((lst (genotype-list population))
         (g0->g-list (make-hash-table :test #'eq))
         (known (alexandria:hash-table-keys (species-tab population))))
-    (format t "computing species with ~A known~%" (length known))
+    ;; (format t "computing species with ~A known~%" (length known))
     (when clear (clrhash *species*))
     (loop :for g :in lst :do
        (aif (find-if (lambda (g0)
@@ -263,8 +263,8 @@
                        #'< :key #'nn::index))
          (f1 (fitness g1))
          (f2 (fitness g2)))
-    (format t "links1: ~A~%" (mapcar (lambda (l) (cons l (nn::index l))) links1))
-    (format t "links2: ~A~%" (mapcar (lambda (l) (cons l (nn::index l))) links2))
+    ;; (format t "links1: ~A~%" links1)
+    ;; (format t "links2: ~A~%" links2)
     (labels ((%collect (ls1 ls2 &key acc)
                (if (and ls1 ls2)
                    (cond ((= (nn::index (first ls1))
@@ -279,10 +279,12 @@
                               (%collect ls1 (cdr ls2) :acc acc)))
                          (t ;; (< (index (first ls1))
                           ;;    (index (first ls2)))
-                          (if (>= f1 f2)
+                          (if (> f1 f2)
                               (%collect (cdr ls1) ls2 :acc (cons (first ls1) acc))
                               (%collect (cdr ls1) ls2 :acc acc))))
-                   (append (reverse acc) ls1))))
+                   (if (>= f2 f1)
+                       (append (reverse acc) ls2)
+                       (append (reverse acc) ls1)))))
       (let* ((links (%collect links1 links2))
              nodes
              new-links)
@@ -312,13 +314,13 @@
                                                           (nn::id (nn::to-node link))))
                                              nodes))
                  new-links))
-        (format  t "links = ~A~%~%" new-links)
+        ;; (format  t "links = ~A~%~%" new-links)
 
         
         (let ((res
                (if (check-recursive-links new-links)
                    (progn (warn "Found recursive links in an offspring")
-                          nil)
+                          (return-from crossover-aux nil))
                    (copy-instance g1 :network (make-instance 'nn::network :links new-links)))))
           (when (some
                  (lambda (link)
@@ -444,11 +446,11 @@
     (let ((p (copy-instance pop :genotype-list (reduce #'append new-generation))))
       (compute-species p :clear t)
 
-      (format t "~A -> ~A species, "
-              (hash-table-count (species-tab pop))
-              (hash-table-count (species-tab p)))
-      (format t "~A individuals, " (length (genotype-list pop)))
-      (format t "~A offsprings~%" (length (genotype-list p)))
+      ;; (format t "~A -> ~A species, "
+      ;;         (hash-table-count (species-tab pop))
+      ;;         (hash-table-count (species-tab p)))
+      ;; (format t "~A individuals, " (length (genotype-list pop)))
+      ;; (format t "~A offsprings~%" (length (genotype-list p)))
       
       
       
@@ -472,7 +474,7 @@
                      (if (> (cdr (gethash g0 (population-g0->f p)))
                             *stagnation-threshold*)
                          (progn
-                           (format t "stagnant species found~%")
+                           ;; (format t "stagnant species found~%")
                            (setf (gethash g0 g0->max-children) 0))
                          (setf (gethash g0 g0->max-children) f))
                      
