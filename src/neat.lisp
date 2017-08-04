@@ -266,7 +266,7 @@
          (aif (gethash g cl-gena/generic-defs::*fitness-cache*)
               it
               (let* ((f (call-next-method))
-                     (f (/ f (gethash g *species*))))
+                     (f (/ f (aif (gethash g *species*) it 1))))
                 (setf (gethash g cl-gena/generic-defs::*fitness-cache*) f)))))
     ;; (when (> (length (nn::network-links (genotype-network g))) 2)
     ;;   (format t "~A = ~A~%" (nn::network-links (genotype-network g)) res ))
@@ -378,8 +378,7 @@
   "Performs one iteration of evolution, spawning new population"
   (let ((new-generation nil)
         (ns nil)
-        ;; (*innovations* (make-hash-table :test #'equal))
-        )
+        (*innovations* (make-hash-table :test #'equal)))
 
 
     
@@ -399,7 +398,7 @@
        (let ((n (length g-list)))
          (if (and (> n 3)
                   (> n (* 0.01 (size pop))))
-             (multiple-value-bind (elite champions) (select-from-list g-list)
+             (multiple-value-bind (elite champions) (cl-gena/generic-defs::select-from-list g-list)
                (let* ((parents (append elite champions))
                       (prob (/ (/ (size pop) 3)
                                (let ((n (length parents)))
